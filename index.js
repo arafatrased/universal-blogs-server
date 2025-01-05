@@ -34,10 +34,16 @@ async function run() {
     await client.connect();
 
     const blogCollection = client.db('blogsDB').collection('blogs');
+    const wishListCollection = client.db('blogsDB').collection('wishlist');
     const blogCommentCollection = client.db('blogsDB').collection('comments');
 
     app.get('/blogs', async (req, res) => {
-      const cursor = blogCollection.find({}).sort({ rating: -1 }).limit(6);
+      const cursor = blogCollection.find({}).sort({ createdAt: -1 }).limit(6);
+      const blogs = await cursor.toArray();
+      res.json(blogs);
+    });
+    app.get('/blogs/banner', async (req, res) => {
+      const cursor = blogCollection.find({}).sort({ createdAt: -1 }).limit(3);
       const blogs = await cursor.toArray();
       res.json(blogs);
     });
@@ -80,6 +86,12 @@ async function run() {
 
     })
 
+    app.get('/wishlist', async (req, res) => {
+      const cursor = wishListCollection.find();
+      const wishlist = await cursor.toArray();
+      res.json(wishlist);
+    });
+
 
     app.post('/blogs', async (req, res) => {
       const newBlog = req.body;
@@ -90,6 +102,17 @@ async function run() {
     app.post('/blogs/comments', async (req, res) => {
       const comment = req.body;
       const result = await blogCommentCollection.insertOne(comment);
+      res.json(result);
+    });
+
+    app.post('/wishlist', async (req, res) => {
+      const newWishlist = req.body;
+      const existingBlog_id = await wishListCollection.findOne({ wish_id: newWishlist.wish_id });
+      if (existingBlog_id) {
+        res.json({ message: 'Blog already exists in the wishlist' });
+        return;
+      }
+      const result = await wishListCollection.insertOne(newWishlist);
       res.json(result);
     });
 
@@ -109,6 +132,13 @@ async function run() {
       const result = await blogCollection.updateOne(query, update);
       res.json(result);
     })
+
+    app.delete('/wishlist/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await wishListCollection.deleteOne(query);
+      res.json(result);
+    });
 
 
     // Send a ping to confirm a successful connection
