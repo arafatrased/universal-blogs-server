@@ -48,6 +48,7 @@ async function run() {
       res.json(blogs);
     });
 
+    //
     app.get('/allblogs', async (req, res) => {
       const searchValue = req.query.search;
       if (searchValue) {
@@ -69,7 +70,7 @@ async function run() {
       res.json(blogs);
     })
 
-
+// details blog api
     app.get('/blogs/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
