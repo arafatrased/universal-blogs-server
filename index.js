@@ -88,7 +88,8 @@ async function run() {
     })
 
     app.get('/wishlist', async (req, res) => {
-      const cursor = wishListCollection.find();
+      const email = req.query.email;
+      const cursor = wishListCollection.find({email: email});
       const wishlist = await cursor.toArray();
       res.json(wishlist);
     });
