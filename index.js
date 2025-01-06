@@ -100,6 +100,7 @@ async function run() {
       res.json(result);
     });
 
+    //Posting Api for comments
     app.post('/blogs/comments', async (req, res) => {
       const comment = req.body;
       const result = await blogCommentCollection.insertOne(comment);
