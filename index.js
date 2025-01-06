@@ -80,8 +80,7 @@ async function run() {
 
     app.get('/blogs/comments/:id', async (req, res) => {
       const id = req.params.id;
-      const query = { blog_id: id };
-      const cursor = blogCommentCollection.find(query);
+      const cursor = blogCommentCollection.find({blog_id: id});
       const comments = await cursor.toArray();
       res.json(comments);
 
