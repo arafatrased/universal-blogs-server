@@ -129,7 +129,7 @@ async function run() {
 
     })
 
-    app.get('/wishlist', async (req, res) => {
+    app.get('/wishlist', verifyToken, async (req, res) => {
       const email = req.query.email;
       // if (req.user.email !== req.query.email) {
       //   return res.status(403).send({ message: 'forbidden access' });
