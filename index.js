@@ -67,6 +67,7 @@ async function run() {
         .cookie('token', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
     });
@@ -75,6 +76,7 @@ async function run() {
       res.clearCookie('token', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
 
       }).send({ success: true });
     });
@@ -129,7 +131,7 @@ async function run() {
 
     })
 
-    app.get('/wishlist', verifyToken, async (req, res) => {
+    app.get('/wishlist', async (req, res) => {
       const email = req.query.email;
       // if (req.user.email !== req.query.email) {
       //   return res.status(403).send({ message: 'forbidden access' });
@@ -190,8 +192,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
