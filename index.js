@@ -1,4 +1,6 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 const app = express();
 const cors = require('cors');
 require('dotenv').config()
@@ -9,7 +11,27 @@ const port = process.env.PORT || 5000;
 
 //Middlewares
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser())
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://universal-blogs.web.app', 'https://universal-blogs.firebaseapp.com'],
+  credentials: true // enable cookie to set in react client
+}));
+
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: 'unAuthorized access' })
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: 'unauthorized access' })
+    }
+    req.user = decoded;
+    next();
+  })
+
+}
 
 
 //Routes
@@ -31,11 +53,32 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect()
 
     const blogCollection = client.db('blogsDB').collection('blogs');
     const wishListCollection = client.db('blogsDB').collection('wishlist');
     const blogCommentCollection = client.db('blogsDB').collection('comments');
+
+    // Authentication Apis
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+      res
+        .cookie('token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+        })
+        .send({ success: true });
+    });
+
+    app.post('/logout', async (req, res) => {
+      res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+
+      }).send({ success: true });
+    });
+
 
     app.get('/blogs', async (req, res) => {
       const cursor = blogCollection.find({}).sort({ createdAt: -1 }).limit(6);
@@ -64,13 +107,13 @@ async function run() {
       }
     });
 
-    app.get('/recent', async(req, res)=>{
+    app.get('/recent', async (req, res) => {
       const cursor = blogCollection.find().sort({ createdAt: -1 }).limit(3);
       const blogs = await cursor.toArray();
       res.json(blogs);
     })
 
-// details blog api
+    // details blog api
     app.get('/blogs/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -80,7 +123,7 @@ async function run() {
 
     app.get('/blogs/comments/:id', async (req, res) => {
       const id = req.params.id;
-      const cursor = blogCommentCollection.find({blog_id: id});
+      const cursor = blogCommentCollection.find({ blog_id: id });
       const comments = await cursor.toArray();
       res.json(comments);
 
@@ -88,7 +131,10 @@ async function run() {
 
     app.get('/wishlist', async (req, res) => {
       const email = req.query.email;
-      const cursor = wishListCollection.find({email: email});
+      // if (req.user.email !== req.query.email) {
+      //   return res.status(403).send({ message: 'forbidden access' });
+      // }
+      const cursor = wishListCollection.find({ email: email });
       const wishlist = await cursor.toArray();
       res.json(wishlist);
     });
